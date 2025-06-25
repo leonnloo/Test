@@ -7,34 +7,70 @@ interface RecipeCardProps {
   recipe: Recipe;
 }
 
+// Helper function to get recipe title (new or legacy format)
+function getRecipeTitle(recipe: Recipe): string {
+  return recipe.name || recipe.title || "Unnamed Recipe";
+}
+
+// Helper function to get cooking time
+function getCookingTime(recipe: Recipe): string | null {
+  if (recipe.cookingTime) return recipe.cookingTime;
+  if (recipe.prepTime) return `${recipe.prepTime} minutes`;
+  return null;
+}
+
+// Helper function to get nutritional info (new or legacy format)
+function getNutritionalInfo(recipe: Recipe) {
+  return recipe.nutrition || recipe.nutritionalInfo;
+}
+
+// Helper function to parse nutritional values for display
+function parseNutritionalValue(value: string | number | undefined): string {
+  if (typeof value === "string") {
+    return value; // Already formatted (e.g., "12g")
+  }
+  if (typeof value === "number") {
+    return `${value}g`; // Legacy format - add unit
+  }
+  return "N/A";
+}
+
 export default function RecipeCard({ recipe }: RecipeCardProps) {
   const [showIngredients, setShowIngredients] = useState(true);
   const [showInstructions, setShowInstructions] = useState(true);
+
+  const recipeTitle = getRecipeTitle(recipe);
+  const cookingTime = getCookingTime(recipe);
+  const nutritionalInfo = getNutritionalInfo(recipe);
 
   return (
     <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden hover:shadow-lg transition-all duration-300">
       {/* Header */}
       <div className="p-4 sm:p-6 border-b border-gray-100">
         <h3 className="text-xl sm:text-2xl font-semibold text-gray-800 mb-3 leading-tight">
-          {recipe.title}
+          {recipeTitle}
         </h3>
 
-        {(recipe.prepTime || recipe.servings) && (
-          <div className="flex flex-wrap gap-3 sm:gap-4 text-sm text-gray-600">
-            {recipe.prepTime && (
-              <span className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
-                <span className="text-blue-600">🕒</span>
-                {recipe.prepTime} mins
-              </span>
-            )}
-            {recipe.servings && (
-              <span className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
-                <span className="text-green-600">👥</span>
-                {recipe.servings} servings
-              </span>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-3 sm:gap-4 text-sm text-gray-600">
+          {cookingTime && (
+            <span className="flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-full">
+              <span className="text-blue-600">🕒</span>
+              {cookingTime}
+            </span>
+          )}
+          {recipe.servings && (
+            <span className="flex items-center gap-1 bg-green-50 px-2 py-1 rounded-full">
+              <span className="text-green-600">👥</span>
+              {recipe.servings} servings
+            </span>
+          )}
+          {recipe.difficulty && (
+            <span className="flex items-center gap-1 bg-purple-50 px-2 py-1 rounded-full">
+              <span className="text-purple-600">🎯</span>
+              {recipe.difficulty}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -68,39 +104,62 @@ export default function RecipeCard({ recipe }: RecipeCardProps) {
       </div>
 
       {/* Nutritional Information */}
-      <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className="pt-4 border-t border-gray-200">
-          <h4 className="font-medium mb-3 text-gray-700 text-center sm:text-left">
-            Nutritional Information (per serving)
-          </h4>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
-            <NutritionalCard
-              value={recipe.nutritionalInfo.calories}
-              unit=""
-              label="Calories"
-              color="orange"
-            />
-            <NutritionalCard
-              value={recipe.nutritionalInfo.protein}
-              unit="g"
-              label="Protein"
-              color="red"
-            />
-            <NutritionalCard
-              value={recipe.nutritionalInfo.carbs}
-              unit="g"
-              label="Carbs"
-              color="blue"
-            />
-            <NutritionalCard
-              value={recipe.nutritionalInfo.fat}
-              unit="g"
-              label="Fat"
-              color="green"
-            />
+      {nutritionalInfo && (
+        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
+          <div className="pt-4 border-t border-gray-200">
+            <h4 className="font-medium mb-3 text-gray-700 text-center sm:text-left">
+              Nutritional Information (per serving)
+            </h4>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
+              <NutritionalCard
+                value={nutritionalInfo.calories}
+                unit=""
+                label="Calories"
+                color="orange"
+              />
+              <NutritionalCard
+                value={parseNutritionalValue(nutritionalInfo.protein)}
+                unit=""
+                label="Protein"
+                color="red"
+              />
+              <NutritionalCard
+                value={parseNutritionalValue(nutritionalInfo.carbs)}
+                unit=""
+                label="Carbs"
+                color="blue"
+              />
+              <NutritionalCard
+                value={parseNutritionalValue(nutritionalInfo.fat)}
+                unit=""
+                label="Fat"
+                color="green"
+              />
+            </div>
+            {/* Additional nutritional info if available */}
+            {(nutritionalInfo.fiber || nutritionalInfo.sugar) && (
+              <div className="grid grid-cols-2 gap-2 sm:gap-3 mt-2">
+                {nutritionalInfo.fiber && (
+                  <NutritionalCard
+                    value={parseNutritionalValue(nutritionalInfo.fiber)}
+                    unit=""
+                    label="Fiber"
+                    color="yellow"
+                  />
+                )}
+                {nutritionalInfo.sugar && (
+                  <NutritionalCard
+                    value={parseNutritionalValue(nutritionalInfo.sugar)}
+                    unit=""
+                    label="Sugar"
+                    color="pink"
+                  />
+                )}
+              </div>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
@@ -190,7 +249,7 @@ function NutritionalCard({
   label,
   color,
 }: {
-  value: number;
+  value: number | string;
   unit: string;
   label: string;
   color: string;
@@ -200,6 +259,8 @@ function NutritionalCard({
     red: "from-red-400 to-red-500",
     blue: "from-blue-400 to-blue-500",
     green: "from-green-400 to-green-500",
+    yellow: "from-yellow-400 to-yellow-500",
+    pink: "from-pink-400 to-pink-500",
   };
 
   return (

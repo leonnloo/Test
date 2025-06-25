@@ -12,6 +12,10 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [apiStatus, setApiStatus] = useState<
+    "checking" | "available" | "unavailable"
+  >("checking");
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   // Check online status
   useEffect(() => {
@@ -27,6 +31,21 @@ export default function Home() {
     };
   }, []);
 
+  // Check API status on mount
+  useEffect(() => {
+    checkApiStatus();
+  }, []);
+
+  const checkApiStatus = async () => {
+    try {
+      setApiStatus("checking");
+      const available = await RecipeService.isApiAvailable();
+      setApiStatus(available ? "available" : "unavailable");
+    } catch {
+      setApiStatus("unavailable");
+    }
+  };
+
   const handleIngredientSubmit = async (ingredients: string[]) => {
     // Check if offline
     if (!isOnline) {
@@ -36,8 +55,17 @@ export default function Home() {
       return;
     }
 
+    // Check API status
+    if (apiStatus === "unavailable") {
+      setError(
+        "The API service is currently unavailable. Please try again later."
+      );
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
     setHasSearched(true);
 
     // Scroll to results section on mobile
@@ -57,11 +85,28 @@ export default function Home() {
     try {
       const response = await RecipeService.analyzeIngredients(ingredients);
       setRecipes(response.recipes);
+
+      // Show success message if provided by backend
+      if (response.message) {
+        setSuccessMessage(response.message);
+      }
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "An unexpected error occurred"
-      );
+      let errorMessage = "An unexpected error occurred";
+
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+
+      setError(errorMessage);
       setRecipes([]);
+
+      // If API became unavailable, update status
+      if (
+        errorMessage.includes("API is not available") ||
+        errorMessage.includes("Network error")
+      ) {
+        setApiStatus("unavailable");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -76,6 +121,25 @@ export default function Home() {
         </div>
       )}
 
+      {/* API Status indicator */}
+      {apiStatus === "unavailable" && isOnline && (
+        <div className="bg-red-500 text-white px-4 py-2 text-center text-sm font-medium">
+          🔧 API service is currently unavailable.
+          <button
+            onClick={checkApiStatus}
+            className="ml-2 underline hover:no-underline"
+          >
+            Retry connection
+          </button>
+        </div>
+      )}
+
+      {apiStatus === "checking" && (
+        <div className="bg-blue-500 text-white px-4 py-2 text-center text-sm font-medium">
+          🔄 Checking API connection...
+        </div>
+      )}
+
       <div className="container mx-auto px-4 py-6 sm:py-8 lg:py-12">
         {/* Header */}
         <header className="text-center mb-8 sm:mb-12 lg:mb-16">
@@ -87,8 +151,31 @@ export default function Home() {
               Transform your available ingredients into delicious recipes with
               detailed nutritional analysis powered by AI
             </p>
+
+            {/* API Status badge */}
+            <div className="mt-4 flex justify-center">
+              {apiStatus === "available" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                  ✅ API Connected
+                </span>
+              )}
+              {apiStatus === "unavailable" && (
+                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700">
+                  ❌ API Unavailable
+                </span>
+              )}
+            </div>
           </div>
         </header>
+
+        {/* Success message */}
+        {successMessage && (
+          <div className="max-w-4xl mx-auto mb-4">
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <div className="text-green-600 font-medium">{successMessage}</div>
+            </div>
+          </div>
+        )}
 
         {/* Main Content */}
         <div className="max-w-6xl mx-auto space-y-6 sm:space-y-8 lg:space-y-12">
@@ -169,7 +256,7 @@ export default function Home() {
             <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-gray-400">
               <span>Made with ❤️ for food lovers</span>
               <span>•</span>
-              <span>Works offline-ready</span>
+              <span>Smart error handling</span>
               <span>•</span>
               <span>Mobile optimized</span>
             </div>

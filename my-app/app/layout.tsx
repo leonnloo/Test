@@ -1,22 +1,38 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import ErrorBoundary from "../components/ErrorBoundary";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
 
 export const metadata: Metadata = {
   title: "Smart Recipe Analyzer",
   description:
-    "Get personalized recipe suggestions with nutritional analysis based on your available ingredients",
+    "Transform your available ingredients into delicious recipes with detailed nutritional analysis powered by AI",
+  keywords: [
+    "recipes",
+    "cooking",
+    "AI",
+    "nutrition",
+    "ingredients",
+    "meal planning",
+  ],
+  authors: [{ name: "Smart Recipe Analyzer" }],
+  viewport: "width=device-width, initial-scale=1",
+  themeColor: "#3b82f6",
 };
+
+function EnvironmentCheck({ children }: { children: React.ReactNode }) {
+  // Check if API URL is configured
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+  if (typeof window !== "undefined" && !apiUrl) {
+    console.warn(
+      "NEXT_PUBLIC_API_URL is not configured. Using default: http://localhost:8000"
+    );
+  }
+
+  return <>{children}</>;
+}
 
 export default function RootLayout({
   children,
@@ -26,9 +42,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50`}
       >
-        {children}
+        <ErrorBoundary>
+          <EnvironmentCheck>{children}</EnvironmentCheck>
+        </ErrorBoundary>
       </body>
     </html>
   );

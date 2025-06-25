@@ -1,20 +1,24 @@
 export interface Recipe {
   id: string;
-  title: string;
+  name: string;
   ingredients: string[];
   instructions: string[];
-  nutritionalInfo: NutritionalInfo;
-  prepTime?: number; // in minutes
+  cookingTime: string;
+  difficulty: string;
+  nutrition: NutritionalInfo;
   servings?: number;
+  title?: string;
+  nutritionalInfo?: NutritionalInfo;
+  prepTime?: number; // in minutes
 }
 
 export interface NutritionalInfo {
   calories: number;
-  protein: number; // in grams
-  carbs: number; // in grams
-  fat: number; // in grams
-  fiber?: number; // in grams
-  sugar?: number; // in grams
+  protein: string;
+  carbs: string;
+  fat?: string;
+  fiber?: string;
+  sugar?: string;
 }
 
 export interface RecipeAnalysisRequest {
@@ -29,4 +33,10 @@ export interface RecipeAnalysisResponse {
 export interface ApiError {
   message: string;
   status?: number;
+}
+
+export interface HealthResponse {
+  status: string;
+  timestamp: string;
+  version: string;
 }
